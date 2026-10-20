@@ -1,0 +1,13 @@
+# Zależności
+Transmitter/Desktop_python/__pycache__/
+Transmitter/Desktop_python/build/
+Transmitter/Desktop_python/dist/
+Transmitter/Desktop_python/.venv/
+
+# Pliki tymczasowe
+*.log
+*.tmp
+
+# Build
+dist/
+build/
