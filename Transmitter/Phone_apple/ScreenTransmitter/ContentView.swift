@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var isCheckingReceiver = false
     @State private var statusMessage = "Enter the TV address or scan its QR code."
     @State private var isError = false
+    @State private var broadcastDiagnostics = "No broadcast diagnostics yet."
 
     var body: some View {
         ZStack {
@@ -24,6 +25,7 @@ struct ContentView: View {
                     header
                     connectionCard
                     broadcastCard
+                    diagnosticsCard
                     footer
                 }
                 .padding(.horizontal, 22)
@@ -34,6 +36,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear(perform: refreshBroadcastDiagnostics)
         .sheet(isPresented: $isShowingScanner) {
             scannerSheet
                 .presentationDetents([.large])
@@ -131,6 +134,35 @@ struct ContentView: View {
         .font(.caption)
         .foregroundStyle(.white.opacity(0.48))
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private var diagnosticsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Broadcast diagnostics", systemImage: "waveform.path")
+                    .font(.headline)
+                Spacer()
+                Button("Refresh", action: refreshBroadcastDiagnostics)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.cyan)
+            }
+            Text("After the stream freezes or stops, return here and tap Refresh.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.58))
+            Text(broadcastDiagnostics)
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.78))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(20)
+        .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 22))
+        .overlay(RoundedRectangle(cornerRadius: 22).stroke(.white.opacity(0.08)))
+    }
+
+    private func refreshBroadcastDiagnostics() {
+        let entries = UserDefaults(suiteName: appGroupIdentifier)?.stringArray(forKey: "broadcastDiagnostics") ?? []
+        broadcastDiagnostics = entries.isEmpty ? "No broadcast diagnostics yet." : entries.suffix(12).joined(separator: "\n")
     }
 
     @ViewBuilder

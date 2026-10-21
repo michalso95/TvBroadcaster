@@ -12,6 +12,7 @@ final class SampleHandler: RPBroadcastSampleHandler {
     private var didFinish = false
 
     override func broadcastStarted(withSetupInfo setupInfo: [String: NSObject]?) {
+        WebRTCStreamer.recordDiagnostic("ReplayKit broadcast started")
         guard let value = UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey),
               let url = URL(string: value) else {
             finishBroadcastWithError(StreamerError.receiverNotConfigured)
@@ -26,14 +27,17 @@ final class SampleHandler: RPBroadcastSampleHandler {
     }
 
     override func broadcastPaused() {
+        WebRTCStreamer.recordDiagnostic("ReplayKit broadcast paused")
         streamer?.setPaused(true)
     }
 
     override func broadcastResumed() {
+        WebRTCStreamer.recordDiagnostic("ReplayKit broadcast resumed")
         streamer?.setPaused(false)
     }
 
     override func broadcastFinished() {
+        WebRTCStreamer.recordDiagnostic("ReplayKit broadcast finished")
         streamer?.stop()
         streamer = nil
     }

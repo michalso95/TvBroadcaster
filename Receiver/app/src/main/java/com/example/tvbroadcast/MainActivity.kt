@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
         webRtcReceiverManager = WebRtcReceiverManager(applicationContext, signalingClient)
 
         surfaceViewRenderer.init(webRtcReceiverManager.eglBase.eglBaseContext, null)
-        surfaceViewRenderer.setEnableHardwareScaler(true)
+        surfaceViewRenderer.setEnableHardwareScaler(false)
         surfaceViewRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         surfaceViewRenderer.setMirror(false)
 

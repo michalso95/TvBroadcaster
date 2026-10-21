@@ -26,6 +26,7 @@ enum StreamerError: LocalizedError {
 }
 
 final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
+    private static let diagnosticsKey = "broadcastDiagnostics"
     private let receiverURL: URL
     private let onFatalError: (Error) -> Void
     private let queue = DispatchQueue(label: "private.ScreenTransmitter.TvBroadcasterBroadcast.streamer")
@@ -39,6 +40,16 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private var pendingCandidates: [RTCIceCandidate] = []
     private var lastTimestampNs: Int64 = 0
     private var didLogFirstFrame = false
+    private var lastDiagnosticsWriteTime: TimeInterval = 0
+    private var framesSinceDiagnosticsWrite = 0
+
+    static func recordDiagnostic(_ message: String) {
+        guard let defaults = UserDefaults(suiteName: "group.private.ScreenTransmitter") else { return }
+        var entries = defaults.stringArray(forKey: diagnosticsKey) ?? []
+        entries.append("\(ISO8601DateFormatter().string(from: Date()))  \(message)")
+        defaults.set(Array(entries.suffix(30)), forKey: diagnosticsKey)
+        defaults.synchronize()
+    }
 
     init(receiverURL: URL, onFatalError: @escaping (Error) -> Void) {
         self.receiverURL = receiverURL
@@ -87,14 +98,21 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         let orientation = videoRotation(for: sampleBuffer)
+        framesSinceDiagnosticsWrite += 1
         if !didLogFirstFrame {
             didLogFirstFrame = true
-            NSLog(
-                "TV Broadcaster: first ReplayKit frame is %dx%d, rotation=%d",
-                CVPixelBufferGetWidth(pixelBuffer),
-                CVPixelBufferGetHeight(pixelBuffer),
-                orientation.rawValue
+            Self.recordDiagnostic(
+                "First ReplayKit frame: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer)), rotation=\(orientation.rawValue)"
             )
+        }
+
+        let now = ProcessInfo.processInfo.systemUptime
+        if now - lastDiagnosticsWriteTime >= 2 {
+            Self.recordDiagnostic(
+                "ReplayKit frames flowing: \(framesSinceDiagnosticsWrite) in interval, size=\(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer)), rotation=\(orientation.rawValue)"
+            )
+            lastDiagnosticsWriteTime = now
+            framesSinceDiagnosticsWrite = 0
         }
 
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
@@ -243,6 +261,7 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private func fail(_ error: Error) {
         queue.async { [weak self] in
             guard let self, !self.isStopped else { return }
+            Self.recordDiagnostic("WebRTC fatal error: \(error.localizedDescription)")
             self.isStopped = true
             self.peerConnection.close()
             RTCCleanupSSL()
@@ -266,7 +285,7 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove stream: RTCMediaStream) {}
     func peerConnectionShouldNegotiate(_ peerConnection: RTCPeerConnection) {}
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
-        NSLog("TV Broadcaster: ICE connection state %@", String(describing: newState))
+        Self.recordDiagnostic("WebRTC ICE state: \(newState)")
     }
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceGatheringState) {}
     func peerConnection(_ peerConnection: RTCPeerConnection, didRemove candidates: [RTCIceCandidate]) {}
