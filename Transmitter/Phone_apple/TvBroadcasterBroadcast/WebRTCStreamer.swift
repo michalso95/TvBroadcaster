@@ -27,7 +27,6 @@ enum StreamerError: LocalizedError {
 
 final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private static let diagnosticsKey = "broadcastDiagnostics"
-    private static let diagnosticsQueue = DispatchQueue(label: "private.ScreenTransmitter.TvBroadcasterBroadcast.diagnostics")
     private let receiverURL: URL
     private let onFatalError: (Error) -> Void
     private let queue = DispatchQueue(label: "private.ScreenTransmitter.TvBroadcasterBroadcast.streamer")
@@ -39,18 +38,18 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private var isPaused = false
     private var isOfferSent = false
     private var pendingCandidates: [RTCIceCandidate] = []
+    private var statsTimer: DispatchSourceTimer?
     private var lastTimestampNs: Int64 = 0
     private var didLogFirstFrame = false
     private var lastDiagnosticsWriteTime: TimeInterval = 0
     private var framesSinceDiagnosticsWrite = 0
 
     static func recordDiagnostic(_ message: String) {
-        diagnosticsQueue.async {
-            guard let defaults = UserDefaults(suiteName: "group.private.ScreenTransmitter") else { return }
-            var entries = defaults.stringArray(forKey: diagnosticsKey) ?? []
-            entries.append("\(ISO8601DateFormatter().string(from: Date()))  \(message)")
-            defaults.set(Array(entries.suffix(30)), forKey: diagnosticsKey)
-        }
+        guard let defaults = UserDefaults(suiteName: "group.private.ScreenTransmitter") else { return }
+        var entries = defaults.stringArray(forKey: diagnosticsKey) ?? []
+        entries.append("\(ISO8601DateFormatter().string(from: Date()))  \(message)")
+        defaults.set(Array(entries.suffix(30)), forKey: diagnosticsKey)
+        defaults.synchronize()
     }
 
     init(receiverURL: URL, onFatalError: @escaping (Error) -> Void) {
@@ -118,10 +117,7 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         }
 
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        let convertedTime = CMTimeConvertScale(time, timescale: 1_000_000_000, method: .default)
-        var timestampNs = time.isValid && time.isNumeric && convertedTime.isValid && convertedTime.isNumeric
-            ? convertedTime.value
-            : Int64(ProcessInfo.processInfo.systemUptime * 1_000_000_000)
+        var timestampNs = CMTimeConvertScale(time, timescale: 1_000_000_000, method: .default).value
         if timestampNs <= lastTimestampNs {
             timestampNs = lastTimestampNs + 1
         }
@@ -157,6 +153,8 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         queue.async { [weak self] in
             guard let self, !self.isStopped else { return }
             self.isStopped = true
+            self.statsTimer?.cancel()
+            self.statsTimer = nil
             self.peerConnection.close()
             RTCCleanupSSL()
         }
@@ -232,6 +230,7 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
                     let candidates = self.pendingCandidates
                     self.pendingCandidates.removeAll()
                     candidates.forEach(self.postCandidate)
+                    self.startStatsLogging()
                 }
             }
         }
@@ -263,11 +262,38 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         URLSession.shared.dataTask(with: request, completionHandler: completion).resume()
     }
 
+    private func startStatsLogging() {
+        guard statsTimer == nil, !isStopped else { return }
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + 3, repeating: 3)
+        timer.setEventHandler { [weak self] in
+            guard let self, !self.isStopped else { return }
+            self.peerConnection.statistics { report in
+                let videoStats = report.statistics.values
+                    .filter {
+                        $0.type == "outbound-rtp" &&
+                            ($0.values["kind"] as? String == "video" || $0.values["mediaType"] as? String == "video")
+                    }
+                    .map { stat in
+                        let values = stat.values
+                        return "framesEncoded=\(values["framesEncoded"] ?? "?") framesSent=\(values["framesSent"] ?? "?") bytesSent=\(values["bytesSent"] ?? "?") fps=\(values["framesPerSecond"] ?? "?")"
+                    }
+                Self.recordDiagnostic(videoStats.isEmpty
+                    ? "WebRTC outbound video stats unavailable"
+                    : "WebRTC outbound video: \(videoStats.joined(separator: "; "))")
+            }
+        }
+        statsTimer = timer
+        timer.resume()
+    }
+
     private func fail(_ error: Error) {
         queue.async { [weak self] in
             guard let self, !self.isStopped else { return }
             Self.recordDiagnostic("WebRTC fatal error: \(error.localizedDescription)")
             self.isStopped = true
+            self.statsTimer?.cancel()
+            self.statsTimer = nil
             self.peerConnection.close()
             RTCCleanupSSL()
             self.onFatalError(error)
