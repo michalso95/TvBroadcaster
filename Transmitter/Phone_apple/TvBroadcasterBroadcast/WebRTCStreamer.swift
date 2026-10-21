@@ -276,7 +276,11 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
                     }
                     .map { stat in
                         let values = stat.values
-                        return "framesEncoded=\(values["framesEncoded"] ?? "?") framesSent=\(values["framesSent"] ?? "?") bytesSent=\(values["bytesSent"] ?? "?") fps=\(values["framesPerSecond"] ?? "?")"
+                        let framesEncoded = values["framesEncoded"].map { String(describing: $0) } ?? "?"
+                        let framesSent = values["framesSent"].map { String(describing: $0) } ?? "?"
+                        let bytesSent = values["bytesSent"].map { String(describing: $0) } ?? "?"
+                        let fps = values["framesPerSecond"].map { String(describing: $0) } ?? "?"
+                        return "framesEncoded=\(framesEncoded) framesSent=\(framesSent) bytesSent=\(bytesSent) fps=\(fps)"
                     }
                 Self.recordDiagnostic(videoStats.isEmpty
                     ? "WebRTC outbound video stats unavailable"
