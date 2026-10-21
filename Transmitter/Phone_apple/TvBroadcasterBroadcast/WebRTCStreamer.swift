@@ -61,6 +61,7 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         let decoderFactory = RTCDefaultVideoDecoderFactory()
         factory = RTCPeerConnectionFactory(encoderFactory: encoderFactory, decoderFactory: decoderFactory)
         videoSource = factory.videoSource()
+        videoSource.adaptOutputFormat(toWidth: 1280, height: 720, fps: 30)
         videoCapturer = RTCVideoCapturer(delegate: videoSource)
 
         let configuration = RTCConfiguration()
