@@ -56,9 +56,8 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         configuration.sdpSemantics = .unifiedPlan
 
         let constraints = RTCMediaConstraints(mandatoryConstraints: nil, optionalConstraints: nil)
-        guard let connection = factory.peerConnection(with: configuration, constraints: constraints, delegate: nil) else {
-            fatalError("Failed to create the WebRTC peer connection")
-        }
+        let connection = factory.peerConnection(with: configuration, constraints: constraints, delegate: nil)
+
         peerConnection = connection
         super.init()
         peerConnection.delegate = self
