@@ -120,11 +120,11 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
 
         switch orientation {
         case .right, .rightMirrored:
-            return ._90
+            return ._270
         case .down, .downMirrored:
             return ._180
         case .left, .leftMirrored:
-            return ._270
+            return ._90
         default:
             return ._0
         }
