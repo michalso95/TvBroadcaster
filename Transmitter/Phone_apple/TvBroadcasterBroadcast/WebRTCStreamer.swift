@@ -43,6 +43,8 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private var didLogFirstFrame = false
     private var lastDiagnosticsWriteTime: TimeInterval = 0
     private var framesSinceDiagnosticsWrite = 0
+    private var lastAdaptedWidth = 0
+    private var lastAdaptedHeight = 0
 
     static func recordDiagnostic(_ message: String) {
         guard let defaults = UserDefaults(suiteName: "group.private.ScreenTransmitter") else { return }
@@ -61,7 +63,6 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         let decoderFactory = RTCDefaultVideoDecoderFactory()
         factory = RTCPeerConnectionFactory(encoderFactory: encoderFactory, decoderFactory: decoderFactory)
         videoSource = factory.videoSource()
-        videoSource.adaptOutputFormat(toWidth: 1280, height: 720, fps: 30)
         videoCapturer = RTCVideoCapturer(delegate: videoSource)
 
         let configuration = RTCConfiguration()
@@ -98,6 +99,18 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     func process(_ sampleBuffer: CMSampleBuffer) {
         guard !isPaused, !isStopped,
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        let sourceWidth = CVPixelBufferGetWidth(pixelBuffer)
+        let sourceHeight = CVPixelBufferGetHeight(pixelBuffer)
+        let scale = min(1.0, 1280.0 / Double(max(sourceWidth, sourceHeight)))
+        let outputWidth = max(2, Int(Double(sourceWidth) * scale) & ~1)
+        let outputHeight = max(2, Int(Double(sourceHeight) * scale) & ~1)
+        if outputWidth != lastAdaptedWidth || outputHeight != lastAdaptedHeight {
+            videoSource.adaptOutputFormat(toWidth: Int32(outputWidth), height: Int32(outputHeight), fps: 30)
+            lastAdaptedWidth = outputWidth
+            lastAdaptedHeight = outputHeight
+            Self.recordDiagnostic("WebRTC output adapted: \(outputWidth)x\(outputHeight) at 30 FPS (source \(sourceWidth)x\(sourceHeight))")
+        }
 
         let orientation = videoRotation(for: sampleBuffer)
         framesSinceDiagnosticsWrite += 1
