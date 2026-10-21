@@ -2,6 +2,7 @@ import AVFoundation
 import CoreVideo
 import Foundation
 import ImageIO
+import ReplayKit
 import WebRTC
 
 enum StreamerError: LocalizedError {
