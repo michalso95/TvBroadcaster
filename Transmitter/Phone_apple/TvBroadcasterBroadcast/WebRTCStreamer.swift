@@ -106,10 +106,10 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         let outputWidth = max(2, Int(Double(sourceWidth) * scale) & ~1)
         let outputHeight = max(2, Int(Double(sourceHeight) * scale) & ~1)
         if outputWidth != lastAdaptedWidth || outputHeight != lastAdaptedHeight {
-            videoSource.adaptOutputFormat(toWidth: Int32(outputWidth), height: Int32(outputHeight), fps: 30)
+            videoSource.adaptOutputFormat(toWidth: Int32(outputWidth), height: Int32(outputHeight), fps: 45)
             lastAdaptedWidth = outputWidth
             lastAdaptedHeight = outputHeight
-            Self.recordDiagnostic("WebRTC output adapted: \(outputWidth)x\(outputHeight) at 30 FPS (source \(sourceWidth)x\(sourceHeight))")
+            Self.recordDiagnostic("WebRTC output adapted: \(outputWidth)x\(outputHeight) at 45 FPS (source \(sourceWidth)x\(sourceHeight))")
         }
 
         let orientation = videoRotation(for: sampleBuffer)
