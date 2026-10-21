@@ -27,6 +27,7 @@ enum StreamerError: LocalizedError {
 
 final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private static let diagnosticsKey = "broadcastDiagnostics"
+    private static let diagnosticsQueue = DispatchQueue(label: "private.ScreenTransmitter.TvBroadcasterBroadcast.diagnostics")
     private let receiverURL: URL
     private let onFatalError: (Error) -> Void
     private let queue = DispatchQueue(label: "private.ScreenTransmitter.TvBroadcasterBroadcast.streamer")
@@ -44,11 +45,12 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private var framesSinceDiagnosticsWrite = 0
 
     static func recordDiagnostic(_ message: String) {
-        guard let defaults = UserDefaults(suiteName: "group.private.ScreenTransmitter") else { return }
-        var entries = defaults.stringArray(forKey: diagnosticsKey) ?? []
-        entries.append("\(ISO8601DateFormatter().string(from: Date()))  \(message)")
-        defaults.set(Array(entries.suffix(30)), forKey: diagnosticsKey)
-        defaults.synchronize()
+        diagnosticsQueue.async {
+            guard let defaults = UserDefaults(suiteName: "group.private.ScreenTransmitter") else { return }
+            var entries = defaults.stringArray(forKey: diagnosticsKey) ?? []
+            entries.append("\(ISO8601DateFormatter().string(from: Date()))  \(message)")
+            defaults.set(Array(entries.suffix(30)), forKey: diagnosticsKey)
+        }
     }
 
     init(receiverURL: URL, onFatalError: @escaping (Error) -> Void) {
@@ -116,7 +118,10 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         }
 
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
-        var timestampNs = CMTimeConvertScale(time, timescale: 1_000_000_000, method: .default).value
+        let convertedTime = CMTimeConvertScale(time, timescale: 1_000_000_000, method: .default)
+        var timestampNs = time.isValid && time.isNumeric && convertedTime.isValid && convertedTime.isNumeric
+            ? convertedTime.value
+            : Int64(ProcessInfo.processInfo.systemUptime * 1_000_000_000)
         if timestampNs <= lastTimestampNs {
             timestampNs = lastTimestampNs + 1
         }
