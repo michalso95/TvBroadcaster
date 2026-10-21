@@ -4,8 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Bundle
 import android.os.PowerManager
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -51,8 +53,38 @@ class MainActivity : AppCompatActivity() {
         signalingClient = ReceiverSignalingClient(8080)
         webRtcReceiverManager = WebRtcReceiverManager(applicationContext, signalingClient)
 
-        surfaceViewRenderer.init(webRtcReceiverManager.eglBase.eglBaseContext, null)
-        surfaceViewRenderer.setEnableHardwareScaler(false)
+        surfaceViewRenderer.init(webRtcReceiverManager.eglBase.eglBaseContext, object : RendererCommon.RendererEvents {
+            override fun onFirstFrameRendered() {}
+
+            override fun onFrameResolutionChanged(videoWidth: Int, videoHeight: Int, rotation: Int) {
+                runOnUiThread {
+                    val effectiveWidth = if (rotation == 90 || rotation == 270) videoHeight else videoWidth
+                    val effectiveHeight = if (rotation == 90 || rotation == 270) videoWidth else videoHeight
+
+                    if (effectiveWidth > 0 && effectiveHeight > 0) {
+                        val displayMetrics = resources.displayMetrics
+                        val containerWidth = displayMetrics.widthPixels.toFloat()
+                        val containerHeight = displayMetrics.heightPixels.toFloat()
+
+                        val videoAspect = effectiveWidth.toFloat() / effectiveHeight.toFloat()
+                        val containerAspect = containerWidth / containerHeight
+
+                        val lp = surfaceViewRenderer.layoutParams as FrameLayout.LayoutParams
+                        if (videoAspect > containerAspect) {
+                            lp.width = containerWidth.toInt()
+                            lp.height = (containerWidth / videoAspect).toInt()
+                            lp.gravity = Gravity.CENTER
+                        } else {
+                            lp.height = containerHeight.toInt()
+                            lp.width = (containerHeight * videoAspect).toInt()
+                            lp.gravity = Gravity.CENTER
+                        }
+                        surfaceViewRenderer.layoutParams = lp
+                    }
+                }
+            }
+        })
+        surfaceViewRenderer.setEnableHardwareScaler(true)
         surfaceViewRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
         surfaceViewRenderer.setMirror(false)
 

@@ -7,6 +7,7 @@ private let broadcastExtensionIdentifier = "private.ScreenTransmitter.TvBroadcas
 private let receiverURLKey = "receiverURL"
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var address = UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey) ?? ""
     @State private var isReceiverConfigured = UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey) != nil
     @State private var isShowingScanner = false
@@ -37,6 +38,11 @@ struct ContentView: View {
         }
         .preferredColorScheme(.dark)
         .onAppear(perform: refreshBroadcastDiagnostics)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                refreshBroadcastDiagnostics()
+            }
+        }
         .sheet(isPresented: $isShowingScanner) {
             scannerSheet
                 .presentationDetents([.large])
