@@ -4,7 +4,7 @@ import Foundation
 import ReplayKit
 import WebRTC
 
-private let appGroupIdentifier = "group.com.example.TvBroadcaster"
+private let appGroupIdentifier = "group.private.ScreenTransmitter"
 private let receiverURLKey = "receiverURL"
 
 final class SampleHandler: RPBroadcastSampleHandler {

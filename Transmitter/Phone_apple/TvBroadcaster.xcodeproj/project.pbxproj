@@ -41,6 +41,7 @@
 		20DF22E13088DD8F000594C4 /* TvBroadcaster.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TvBroadcaster.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		20DF23133088EA8B000594C4 /* TvBroadcasterBroadcast.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TvBroadcasterBroadcast.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		20DF23153088EA8B000594C4 /* ReplayKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ReplayKit.framework; path = System/Library/Frameworks/ReplayKit.framework; sourceTree = SDKROOT; };
+		20DF235D30891828000594C4 /* TvBroadcaster.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TvBroadcaster.entitlements; sourceTree = "<group>"; };
 		55FA938B6DC0A7EC042F2A9C /* Pods-TvBroadcaster.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TvBroadcaster.debug.xcconfig"; path = "Target Support Files/Pods-TvBroadcaster/Pods-TvBroadcaster.debug.xcconfig"; sourceTree = "<group>"; };
 		6E4B587680DB9EE771DEDF26 /* Pods-TvBroadcaster.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TvBroadcaster.release.xcconfig"; path = "Target Support Files/Pods-TvBroadcaster/Pods-TvBroadcaster.release.xcconfig"; sourceTree = "<group>"; };
 		7C2060433287C3D1FA617F77 /* Pods-TvBroadcasterBroadcast.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TvBroadcasterBroadcast.debug.xcconfig"; path = "Target Support Files/Pods-TvBroadcasterBroadcast/Pods-TvBroadcasterBroadcast.debug.xcconfig"; sourceTree = "<group>"; };
@@ -99,6 +100,7 @@
 		20DF22D83088DD8F000594C4 = {
 			isa = PBXGroup;
 			children = (
+				20DF235D30891828000594C4 /* TvBroadcaster.entitlements */,
 				20DF22E33088DD8F000594C4 /* ScreenTransmitter */,
 				20DF23173088EA8B000594C4 /* TvBroadcasterBroadcast */,
 				20DF23143088EA8B000594C4 /* Frameworks */,
@@ -454,6 +456,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TvBroadcaster.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZVC53XDTFQ;
@@ -500,6 +503,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TvBroadcaster.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZVC53XDTFQ;
@@ -544,6 +548,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7C2060433287C3D1FA617F77 /* Pods-TvBroadcasterBroadcast.debug.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TvBroadcasterBroadcast/TvBroadcasterBroadcast.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZVC53XDTFQ;
@@ -575,6 +580,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = E818F6B4ABF04BD07C3D81B2 /* Pods-TvBroadcasterBroadcast.release.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TvBroadcasterBroadcast/TvBroadcasterBroadcast.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = ZVC53XDTFQ;

@@ -26,7 +26,7 @@ enum StreamerError: LocalizedError {
 final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private let receiverURL: URL
     private let onFatalError: (Error) -> Void
-    private let queue = DispatchQueue(label: "com.example.TvBroadcaster.streamer")
+    private let queue = DispatchQueue(label: "private.ScreenTransmitter.TvBroadcasterBroadcast.streamer")
     private let factory: RTCPeerConnectionFactory
     private let videoSource: RTCVideoSource
     private let videoCapturer: RTCVideoCapturer

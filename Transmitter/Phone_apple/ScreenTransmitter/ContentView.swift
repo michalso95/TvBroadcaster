@@ -2,8 +2,8 @@ import SwiftUI
 import VisionKit
 import AVFoundation
 
-private let appGroupIdentifier = "group.com.example.TvBroadcaster"
-private let broadcastExtensionIdentifier = "com.example.TvBroadcaster.BroadcastUpload"
+private let appGroupIdentifier = "group.private.ScreenTransmitter"
+private let broadcastExtensionIdentifier = "private.ScreenTransmitter.TvBroadcasterBroadcast"
 private let receiverURLKey = "receiverURL"
 
 struct ContentView: View {
