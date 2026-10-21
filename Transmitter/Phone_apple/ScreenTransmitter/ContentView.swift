@@ -8,6 +8,7 @@ private let receiverURLKey = "receiverURL"
 
 struct ContentView: View {
     @State private var address = UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey) ?? ""
+    @State private var isReceiverConfigured = UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey) != nil
     @State private var isShowingScanner = false
     @State private var isCheckingReceiver = false
     @State private var statusMessage = "Enter the TV address or scan its QR code."
@@ -114,8 +115,8 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-                .disabled(UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey) == nil)
-                .opacity(UserDefaults(suiteName: appGroupIdentifier)?.string(forKey: receiverURLKey) == nil ? 0.45 : 1)
+                .disabled(!isReceiverConfigured)
+                .opacity(isReceiverConfigured ? 1 : 0.45)
         }
         .padding(20)
         .background(.white.opacity(0.055), in: RoundedRectangle(cornerRadius: 22))
@@ -228,7 +229,18 @@ struct ContentView: View {
                     return
                 }
                 address = receiver.url.absoluteString
-                UserDefaults(suiteName: appGroupIdentifier)?.set(receiver.url.absoluteString, forKey: receiverURLKey)
+                guard let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
+                    statusMessage = "Could not access shared app settings. Check the App Groups capability for both app targets."
+                    isError = true
+                    return
+                }
+                sharedDefaults.set(receiver.url.absoluteString, forKey: receiverURLKey)
+                guard sharedDefaults.string(forKey: receiverURLKey) == receiver.url.absoluteString else {
+                    statusMessage = "Could not save the TV address for screen sharing. Check that both targets use the same App Group."
+                    isError = true
+                    return
+                }
+                isReceiverConfigured = true
                 statusMessage = "TV receiver found. Start a broadcast to share your screen."
                 isError = false
             }
