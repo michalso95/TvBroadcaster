@@ -7,10 +7,10 @@ TvBroadcaster is a personal, in-progress project for sending a screen or other m
 The intended system has three kinds of apps:
 
 - **Desktop transmitter** — share a computer screen. The first Windows/Python implementation is in this repository.
-- **TV receiver** — an app that can be installed on a TV or a TV-connected device and displays incoming streams. This is planned, but is not included yet.
-- **Phone transmitter** — iPhone and Android apps that can send supported phone media to the TV receiver. These are also planned, not implemented yet.
+- **TV receiver** — an Android app that runs on an Android TV or TV-connected device and displays incoming streams.
+- **Phone transmitter** — an iPhone source scaffold is now started in `Transmitter/Phone_apple/`; it supports receiver IP entry, scanning the TV's QR code, and a ReplayKit/WebRTC broadcast extension. Android phone support remains planned.
 
-The longer-term idea is for the receiver to be the playback endpoint and for desktop and mobile transmitters to connect to it using a shared, documented streaming/signaling protocol. This repository currently contains only the desktop transmitter; a compatible receiver must be supplied separately.
+The longer-term idea is for the receiver to be the playback endpoint and for desktop and mobile transmitters to connect to it using a shared, documented streaming/signaling protocol. The repository contains an Android TV receiver and desktop transmitter; the iPhone transmitter is an initial, unbuilt source scaffold.
 
 ## What is implemented
 
@@ -21,6 +21,8 @@ The current desktop sender provides:
 - Primary-monitor capture at a configured 60 FPS, including the Windows mouse cursor.
 - WebRTC video streaming using `aiortc` and H.264.
 - Local-network receiver discovery by checking the active IPv4 `/24` subnet for HTTP endpoints on port `8080`.
+
+The iPhone sender is an initial Swift source scaffold. It has not yet been built or tested in Xcode; see `Transmitter/Phone_apple/README.md` for macOS target setup and current limitations.
 
 Discovery is a convenience, not a prerequisite: the receiver's IP address or host name can be entered manually. Discovery currently checks only the active IPv4 `/24` subnet, so it may not find devices on a different subnet or a network with client isolation enabled.
 
@@ -34,21 +36,24 @@ WebRTC media is negotiated peer-to-peer where possible. The sender is configured
 
 ```text
 Transmitter/
-└── Desktop_python/
-	├── sender.py                 # GUI and CLI entry points
-	├── discovery.py              # Local subnet receiver discovery
-	├── webrtc_sender.py          # WebRTC offer, signaling, and lifecycle
-	├── screen_track.py           # Desktop capture and video frames
-	├── windows_cursor.py         # Windows cursor capture/compositing
-	├── settings.py               # Video and STUN configuration
-	├── log_writer.py             # GUI log forwarding
-	├── TVDesktopSender.spec      # PyInstaller single-file build
-	└── TVDesktopSenderGUI.spec   # PyInstaller GUI folder build
+├── Desktop_python/
+│   ├── sender.py                 # GUI and CLI entry points
+│   ├── discovery.py              # Local subnet receiver discovery
+│   ├── webrtc_sender.py          # WebRTC offer, signaling, and lifecycle
+│   ├── screen_track.py           # Desktop capture and video frames
+│   ├── windows_cursor.py         # Windows cursor capture/compositing
+│   ├── settings.py               # Video and STUN configuration
+│   ├── log_writer.py             # GUI log forwarding
+│   ├── TVDesktopSender.spec      # PyInstaller single-file build
+│   └── TVDesktopSenderGUI.spec   # PyInstaller GUI folder build
+└── Phone_apple/
+	├── TVBroadcaster/              # SwiftUI app: manual entry and QR scanning
+	└── BroadcastUploadExtension/   # ReplayKit capture and WebRTC signaling
 ```
 
 ## Requirements
 
-- Windows (the current capture and cursor implementation uses Windows APIs).
+- Windows for the desktop transmitter; macOS with Xcode is required to build and sign the iPhone app.
 - Python. The existing build artifacts were produced with Python 3.13; the project does not yet pin or certify a supported Python version.
 - A compatible TV receiver running on the same reachable network, listening on port `8080`.
 - Network access between the computer and receiver. Internet access may be needed for the configured public STUN servers.
@@ -100,10 +105,10 @@ The GUI build is the recommended one to try first. Build on Windows, since the c
 
 ## Current limitations and roadmap
 
-- No TV receiver implementation is included yet; the sender cannot receive or render its own stream.
-- No iOS or Android transmitter is included yet.
+- The iPhone scaffold has not yet been compiled, signed, or tested on a physical device.
+- The TV receiver's HTTP signaling server is a prototype and may need hardening for production.
 - Only the primary Windows display is captured. There are no display-selection, audio, or quality controls in the current GUI.
 - Receiver discovery is an IPv4 subnet scan, not a general device-discovery protocol.
 - There is no installer, automatic update mechanism, or pinned dependency lockfile yet.
 
-Planned work is to define and implement the receiver-side protocol, build a TV receiver app, and then add phone transmitters for iPhone and Android that use the same receiver experience.
+Planned work is to validate the iPhone sender on macOS and a physical iPhone, then improve protocol reliability and add an Android phone transmitter.

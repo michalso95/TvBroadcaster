@@ -1,0 +1,10 @@
+platform :ios, '16.0'
+
+# Add the app and Broadcast Upload Extension targets created in Xcode.
+target 'TVBroadcaster' do
+  pod 'GoogleWebRTC', '~> 1.1.29400'
+end
+
+target 'TVBroadcasterBroadcast' do
+  pod 'GoogleWebRTC', '~> 1.1.29400'
+end
