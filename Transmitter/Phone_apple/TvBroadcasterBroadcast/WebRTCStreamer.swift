@@ -1,6 +1,7 @@
 import AVFoundation
 import CoreVideo
 import Foundation
+import ImageIO
 import WebRTC
 
 enum StreamerError: LocalizedError {
@@ -36,6 +37,7 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
     private var isOfferSent = false
     private var pendingCandidates: [RTCIceCandidate] = []
     private var lastTimestampNs: Int64 = 0
+    private var didLogFirstFrame = false
 
     init(receiverURL: URL, onFatalError: @escaping (Error) -> Void) {
         self.receiverURL = receiverURL
@@ -83,6 +85,17 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         guard !isPaused, !isStopped,
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
+        let orientation = videoRotation(for: sampleBuffer)
+        if !didLogFirstFrame {
+            didLogFirstFrame = true
+            NSLog(
+                "TV Broadcaster: first ReplayKit frame is %dx%d, rotation=%d",
+                CVPixelBufferGetWidth(pixelBuffer),
+                CVPixelBufferGetHeight(pixelBuffer),
+                orientation.rawValue
+            )
+        }
+
         let time = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         var timestampNs = CMTimeConvertScale(time, timescale: 1_000_000_000, method: .default).value
         if timestampNs <= lastTimestampNs {
@@ -90,8 +103,30 @@ final class WebRTCStreamer: NSObject, RTCPeerConnectionDelegate {
         }
         lastTimestampNs = timestampNs
         let rtcBuffer = RTCCVPixelBuffer(pixelBuffer: pixelBuffer)
-        let frame = RTCVideoFrame(buffer: rtcBuffer, rotation: ._0, timeStampNs: timestampNs)
+        let frame = RTCVideoFrame(buffer: rtcBuffer, rotation: orientation, timeStampNs: timestampNs)
         videoSource.capturer(videoCapturer, didCapture: frame)
+    }
+
+    private func videoRotation(for sampleBuffer: CMSampleBuffer) -> RTCVideoRotation {
+        guard let value = CMGetAttachment(
+            sampleBuffer,
+            key: RPVideoSampleOrientationKey as CFString,
+            attachmentModeOut: nil
+        ) as? NSNumber,
+        let orientation = CGImagePropertyOrientation(rawValue: value.uint32Value) else {
+            return ._0
+        }
+
+        switch orientation {
+        case .right, .rightMirrored:
+            return ._90
+        case .down, .downMirrored:
+            return ._180
+        case .left, .leftMirrored:
+            return ._270
+        default:
+            return ._0
+        }
     }
 
     func stop() {
